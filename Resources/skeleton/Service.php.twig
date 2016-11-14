@@ -1,0 +1,58 @@
+<?php
+
+namespace {{ namespace }}\Service;
+
+use Vizzle\ServiceBundle\Mapping;
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
+
+/**
+ * @Mapping\Process(
+ *     name="{{ name }}",
+ *     description=""
+ * )
+ */
+class {{ class }} implements ContainerAwareInterface
+{
+    use ContainerAwareTrait;
+
+    /**
+     * @Mapping\Execute()
+     */
+    public function execute()
+    {
+
+        // Process code...
+
+    }
+
+    /**
+     * @Mapping\OnStart()
+     */
+    public function onStart()
+    {
+
+        // On start code...
+
+    }
+
+    /**
+     * @Mapping\OnStop()
+     */
+    public function onStop()
+    {
+
+        // On stop code...
+
+    }
+
+    /**
+     * @Mapping\OnError()
+     */
+    public function onError()
+    {
+
+        // On error code...
+
+    }
+}
