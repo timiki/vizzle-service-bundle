@@ -104,24 +104,4 @@ class ObserverService implements ContainerAwareInterface
         }
 
     }
-
-    /**
-     * @Mapping\OnStop()
-     */
-    public function onStop()
-    {
-
-        // On stop code...
-
-    }
-
-    /**
-     * @Mapping\OnError()
-     */
-    public function onError()
-    {
-
-        // On error code...
-
-    }
 }

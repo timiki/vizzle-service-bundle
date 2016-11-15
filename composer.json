@@ -22,6 +22,7 @@
     "symfony/dependency-injection": "~3.0",
     "symfony/console"             : "~3.0",
     "symfony/framework-bundle"    : "~3.0",
+    "monolog/monolog"             : "~1.18",
     "timiki/vizzle-bundle"        : "~0.1"
   },
   "require-dev": {

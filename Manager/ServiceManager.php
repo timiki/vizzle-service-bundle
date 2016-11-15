@@ -95,21 +95,29 @@ class ServiceManager implements ContainerAwareInterface, MapperAwareInterface
     /**
      * Check is service enabled for run.
      *
-     * @param string $service
+     * @param string $name
      *
      * @return bool
-     * @throws \Vizzle\Common\Mapper\Exceptions\InvalidMappingException
+     * @throws \Vizzle\VizzleBundle\Mapper\Exceptions\InvalidMappingException
      */
-    public function isServiceEnabled($service)
+    public function isServiceEnabled($name)
     {
-        if ($service = $this->getServiceObject($service)) {
+        $container = $this->container;
+        $service   = $this->getServiceObject($name);
+
+        // Is service has isEnabled method call it.
+        if ($service) {
 
             $reflection = new \ReflectionObject($service);
-
             if ($reflection->hasMethod('isEnabled')) {
                 return (boolean)$reflection->getMethod('isEnabled')->invoke($service);
             }
 
+        }
+
+        // Check is service in disabled list.
+        if ($this->container && $container->hasParameter('vizzle.services_disabled') && is_array($container->getParameter('vizzle.services_disabled'))) {
+            return !in_array($name, $container->getParameter('vizzle.services_disabled'));
         }
 
         // By default service is enabled.
@@ -195,7 +203,7 @@ class ServiceManager implements ContainerAwareInterface, MapperAwareInterface
      * @param string $service Service name.
      *
      * @return bool
-     * @throws \Vizzle\Common\Mapper\Exceptions\InvalidMappingException
+     * @throws \Vizzle\VizzleBundle\Mapper\Exceptions\InvalidMappingException
      */
     public function isServiceExist($service)
     {
