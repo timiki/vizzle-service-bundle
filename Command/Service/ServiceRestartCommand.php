@@ -12,6 +12,11 @@ use Symfony\Component\Console\Input\ArrayInput;
 class ServiceRestartCommand extends ContainerAwareCommand
 {
     /**
+     * @var SymfonyStyle
+     */
+    protected $io;
+
+    /**
      * Configures the current command.
      */
     protected function configure()
@@ -27,16 +32,28 @@ EOT
             );
     }
 
+    /**
+     * Initializes the command just after the input has been validated.
+     *
+     * This is mainly useful when a lot of commands extends one main command
+     * where some things need to be initialized based on the input arguments and options.
+     *
+     * @param InputInterface $input An InputInterface instance
+     * @param OutputInterface $output An OutputInterface instance
+     */
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->io = new SymfonyStyle($input, $output);
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io        = new SymfonyStyle($input, $output);
         $container = $this->getContainer();
         $manager   = $container->get('vizzle.service.manager');
         $service   = $input->getArgument('service');
 
         if (!$manager->isServiceExist($service)) {
-
-            $io->error(
+            $this->io->error(
                 sprintf(
                     'Service "%s" not exist',
                     $service
@@ -47,8 +64,7 @@ EOT
         }
 
         if (!$manager->isServiceRun($service)) {
-
-            $io->writeln([
+            $this->io->writeln([
                     sprintf(
                         'Service "%s" not start.',
                         $service
@@ -56,33 +72,27 @@ EOT
                     '',
                 ]
             );
-
         } else {
-
-            $this->getApplication()->doRun(
+            $command = $this->getApplication()->find('service:stop');
+            $command->run(
                 new ArrayInput(
                     [
-                        'command' => 'service:stop',
                         'service' => $service,
-                    ]
-                ),
+                    ]),
                 $output
             );
 
             sleep(5);
 
-            $this->getApplication()->doRun(
+            $command = $this->getApplication()->find('service:start');
+            $command->run(
                 new ArrayInput(
                     [
-                        'command' => 'service:start',
                         'service' => $service,
-                    ]
-                ),
+                    ]),
                 $output
             );
-
         }
-
     }
 }
 

@@ -7,10 +7,26 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Vizzle\ServiceBundle\Manager\ServiceManager;
 use Vizzle\VizzleBundle\Process\ProcessUtils;
 
 class ServiceStopCommand extends ContainerAwareCommand
 {
+    /**
+     * @var SymfonyStyle
+     */
+    protected $io;
+
+    /**
+     * @var ProcessUtils
+     */
+    protected $utils;
+
+    /**
+     * @var ServiceManager
+     */
+    protected $manager;
+
     /**
      * Configures the current command.
      */
@@ -27,16 +43,29 @@ EOT
             );
     }
 
+    /**
+     * Initializes the command just after the input has been validated.
+     *
+     * This is mainly useful when a lot of commands extends one main command
+     * where some things need to be initialized based on the input arguments and options.
+     *
+     * @param InputInterface $input An InputInterface instance
+     * @param OutputInterface $output An OutputInterface instance
+     */
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->io      = new SymfonyStyle($input, $output);
+        $this->utils   = new ProcessUtils();
+        $this->manager = $this->getContainer()->get('vizzle.service.manager');
+
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io    = new SymfonyStyle($input, $output);
-        $utils = new ProcessUtils();
+        $io      = new SymfonyStyle($input, $output);
+        $service = $input->getArgument('service');
 
-        $container = $this->getContainer();
-        $manager   = $container->get('vizzle.service.manager');
-        $service   = $input->getArgument('service');
-
-        if (!$manager->isServiceExist($service)) {
+        if (!$this->manager->isServiceExist($service)) {
 
             $io->error(
                 sprintf(
@@ -48,7 +77,7 @@ EOT
             return 1;
         }
 
-        if (!$manager->isServiceRun($service)) {
+        if (!$this->manager->isServiceRun($service)) {
 
             $io->writeln(
                 sprintf(
@@ -60,7 +89,7 @@ EOT
             return 1;
         }
 
-        $utils->terminate($manager->getServicePid($service));
+        $this->utils->terminate($this->manager->getServicePid($service));
 
         $message = 'Stop service <info>%s</info> ';
 
@@ -79,7 +108,7 @@ EOT
         $result    = 0;
         $resultMsg = '<info>OK</info>' . PHP_EOL;
 
-        while ($manager->isServiceRun($service)) {
+        while ($this->manager->isServiceRun($service)) {
 
             $io->write('.');
             sleep(1);

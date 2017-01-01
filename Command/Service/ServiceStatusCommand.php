@@ -7,9 +7,20 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Vizzle\ServiceBundle\Manager\ServiceManager;
 
 class ServiceStatusCommand extends ContainerAwareCommand
 {
+    /**
+     * @var SymfonyStyle
+     */
+    protected $io;
+
+    /**
+     * @var ServiceManager
+     */
+    protected $manager;
+
     /**
      * Configures the current command.
      */
@@ -26,16 +37,27 @@ EOT
             );
     }
 
+    /**
+     * Initializes the command just after the input has been validated.
+     *
+     * This is mainly useful when a lot of commands extends one main command
+     * where some things need to be initialized based on the input arguments and options.
+     *
+     * @param InputInterface $input An InputInterface instance
+     * @param OutputInterface $output An OutputInterface instance
+     */
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->io      = new SymfonyStyle($input, $output);
+        $this->manager = $this->getContainer()->get('vizzle.service.manager');
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io        = new SymfonyStyle($input, $output);
-        $container = $this->getContainer();
-        $manager   = $container->get('vizzle.service.manager');
-        $service   = $input->getArgument('service');
+        $service = $input->getArgument('service');
 
-        if (!$manager->isServiceExist($service)) {
-
-            $io->error(
+        if (!$this->manager->isServiceExist($service)) {
+            $this->io->error(
                 sprintf(
                     'Service "%s" not exist',
                     $service
@@ -45,24 +67,20 @@ EOT
             return 1;
         }
 
-        if (!$manager->isServiceRun($service)) {
-
-            $io->writeln(
+        if (!$this->manager->isServiceRun($service)) {
+            $this->io->writeln(
                 sprintf(
                     'Service <info>%s</info> stop.',
                     $service
                 )
             );
-
         } else {
-
-            $io->writeln(
+            $this->io->writeln(
                 sprintf(
                     'Service <info>%s</info> start.',
                     $service
                 )
             );
-
         }
 
         return 0;

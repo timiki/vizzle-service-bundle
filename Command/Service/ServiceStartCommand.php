@@ -8,10 +8,26 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpKernel\Kernel;
+use Vizzle\ServiceBundle\Manager\ServiceManager;
 use Vizzle\VizzleBundle\Process\ProcessUtils;
 
 class ServiceStartCommand extends ContainerAwareCommand
 {
+    /**
+     * @var SymfonyStyle
+     */
+    protected $io;
+
+    /**
+     * @var ProcessUtils
+     */
+    protected $utils;
+
+    /**
+     * @var ServiceManager
+     */
+    protected $manager;
+
     /**
      * Configures the current command.
      */
@@ -28,17 +44,28 @@ EOT
             );
     }
 
+    /**
+     * Initializes the command just after the input has been validated.
+     *
+     * This is mainly useful when a lot of commands extends one main command
+     * where some things need to be initialized based on the input arguments and options.
+     *
+     * @param InputInterface $input An InputInterface instance
+     * @param OutputInterface $output An OutputInterface instance
+     */
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $this->io      = new SymfonyStyle($input, $output);
+        $this->utils   = new ProcessUtils();
+        $this->manager = $this->getContainer()->get('vizzle.service.manager');
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io           = new SymfonyStyle($input, $output);
-        $container    = $this->getContainer();
-        $manager      = $container->get('vizzle.service.manager');
-        $service      = $input->getArgument('service');
-        $processUtils = new ProcessUtils();
+        $service = $input->getArgument('service');
 
-        if (!$manager->isServiceExist($service)) {
-
-            $io->error(
+        if (!$this->manager->isServiceExist($service)) {
+            $this->io->error(
                 sprintf(
                     'Service "%s" not exist',
                     $service
@@ -48,9 +75,8 @@ EOT
             return 1;
         }
 
-        if (!$manager->isServiceEnabled($service)) {
-
-            $io->error(
+        if (!$this->manager->isServiceEnabled($service)) {
+            $this->io->error(
                 sprintf(
                     'Service "%s" is disabled for run.',
                     $service
@@ -60,9 +86,8 @@ EOT
             return 1;
         }
 
-        if ($manager->isServiceRun($service)) {
-
-            $io->writeln(
+        if ($this->manager->isServiceRun($service)) {
+            $this->io->writeln(
                 sprintf(
                     'Service <info>%s</info> already start.',
                     $service
@@ -75,10 +100,10 @@ EOT
 
         // Check pcntl_signal
         if (in_array('pcntl_signal', explode(',', ini_get('disable_functions')))) {
-            $io->note('Attention pcntl_signal is disabled');
+            $this->io->note('Attention pcntl_signal is disabled');
         }
 
-        $rootDir = $container->get('kernel')->getRootDir();
+        $rootDir = $this->getContainer()->get('kernel')->getRootDir();
 
         if (Kernel::VERSION_ID >= 30000) {
             $consolePath = realpath($rootDir . '/../bin/console');
@@ -94,12 +119,12 @@ EOT
         }
 
         // Run in background
-        $processUtils->runBackground($cmd);
+        $this->utils->runBackground($cmd);
 
-        $message = 'Start service <info>%s</info> ';
+        $message = ' * Start service <info>%s</info> ';
 
         // Wait for run
-        $io->write(
+        $this->io->write(
             sprintf(
                 $message,
                 $service
@@ -113,9 +138,8 @@ EOT
         $result    = 0;
         $resultMsg = '<info>OK</info>' . PHP_EOL;
 
-        while (!$manager->isServiceRun($service)) {
-
-            $io->write('.');
+        while (!$this->manager->isServiceRun($service)) {
+            $this->io->write('.');
             sleep(1);
 
             if ($wait === $maxWait) {
@@ -127,7 +151,7 @@ EOT
             $wait++;
         }
 
-        $io->write($resultMsg);
+        $this->io->write($resultMsg);
 
         return $result;
     }
